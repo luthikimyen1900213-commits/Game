@@ -212,9 +212,8 @@
 
     <header>
         <h1>🔤 English Word Scramble</h1>
-        <p>Sắp xếp các chữ cái thành từ tiếng Anh đúng!</p>
-    </header>
-
+       
+    </header>s
     <section class="card">
 
         <div class="top">
@@ -227,7 +226,6 @@
         </div>
 
         <div class="hint">
-            <small>GỢI Ý NGHĨA TIẾNG VIỆT</small>
             <strong id="hint"></strong>
         </div>
 
@@ -388,7 +386,25 @@ const sample = [
     function draw() {
         const item = words[index];
 
-        tiles = shuffle(item.word);
+  
+const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toLowerCase();
+
+let extraLetters = "";
+
+for (let i = 0; i < 2; i++) {
+    const available = [...alphabet].filter(
+        letter => !item.word.includes(letter) &&
+                  !extraLetters.includes(letter)
+    );
+
+    const randomIndex = Math.floor(
+        Math.random() * available.length
+    );
+
+    extraLetters += available[randomIndex];
+}
+
+tiles = shuffle(item.word + extraLetters);
         selected = [];
         done = false;
 
@@ -441,10 +457,10 @@ const sample = [
                 b.title = "Bấm để bỏ chữ này";
                 b.disabled = done;
 
-                b.onclick = () => {
-                    selected.splice(i, 1);
-                    render();
-                };
+              b.onclick = () => {
+    selected.splice(i, 1);
+    render();
+};
 
                 answer.append(b);
             }
@@ -462,9 +478,11 @@ const sample = [
             b.disabled = done;
 
             b.onclick = () => {
-                selected.push(tile.id);
-                render();
-            };
+    if (selected.length < words[index].word.length) {
+        selected.push(tile.id);
+        render();
+    }
+};
 
             letters.append(b);
         }
