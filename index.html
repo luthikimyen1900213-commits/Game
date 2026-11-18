@@ -1,0 +1,660 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>English Word Scramble</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 22px;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            color: #172554;
+            background: linear-gradient(145deg, #dbeafe, #f5f3ff);
+        }
+
+        .wrap {
+            max-width: 780px;
+            margin: auto;
+        }
+
+        header {
+            text-align: center;
+            margin: 10px 0 22px;
+        }
+
+        h1 {
+            font-size: 32px;
+        }
+
+        header p {
+            color: #475569;
+        }
+
+        .card {
+            background: white;
+            border-radius: 22px;
+            padding: 24px;
+            margin-bottom: 18px;
+            box-shadow: 0 14px 38px #1e3a8a18;
+        }
+
+        .top {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            font-weight: bold;
+            color: #475569;
+        }
+
+        .bar {
+            height: 10px;
+            background: #e2e8f0;
+            border-radius: 30px;
+            overflow: hidden;
+            margin: 16px 0 26px;
+        }
+
+        .fill {
+            height: 100%;
+            width: 0%;
+            background: #4f46e5;
+            transition: width 0.3s;
+        }
+
+        .hint {
+            font-size: 22px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .hint small {
+            display: block;
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 9px;
+        }
+
+        .answer, .letters {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            min-height: 70px;
+            margin: 12px 0;
+        }
+
+        .tile {
+            min-width: 44px;
+            height: 52px;
+            border: 2px solid #c7d2fe;
+            border-radius: 12px;
+            background: #eef2ff;
+            color: #312e81;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .tile:hover {
+            transform: translateY(-2px);
+        }
+
+        .answer .tile {
+            background: #ddd6fe;
+        }
+
+        .empty {
+            min-width: 45px;
+            height: 52px;
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            background: #f8fafc;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 9px;
+            margin-top: 23px;
+        }
+
+        button.action {
+            padding: 13px 18px;
+            border: none;
+            border-radius: 12px;
+            background: #e2e8f0;
+            color: #334155;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button.primary {
+            background: #4f46e5;
+            color: white;
+        }
+
+        button:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .message {
+            text-align: center;
+            font-weight: bold;
+            min-height: 28px;
+            margin-top: 16px;
+        }
+
+        .success {
+            color: green;
+        }
+
+        .error {
+            color: red;
+        }
+
+        details summary {
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            margin: 12px 0;
+            font: 15px/1.6 monospace;
+        }
+
+        .note {
+            color: #64748b;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        footer {
+            text-align: center;
+            color: #64748b;
+            padding: 10px;
+        }
+
+        @media (max-width: 520px) {
+            .card {
+                padding: 17px;
+            }
+
+            .tile {
+                min-width: 39px;
+                height: 47px;
+                font-size: 21px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="wrap">
+
+    <header>
+        <h1>🔤 English Word Scramble</h1>
+        <p>Sắp xếp các chữ cái thành từ tiếng Anh đúng!</p>
+    </header>
+
+    <section class="card">
+
+        <div class="top">
+            <span id="counter">Từ 1 / 40</span>
+            <span id="score">⭐ Đúng: 0</span>
+        </div>
+
+        <div class="bar">
+            <div class="fill" id="progress"></div>
+        </div>
+
+        <div class="hint">
+            <small>GỢI Ý NGHĨA TIẾNG VIỆT</small>
+            <strong id="hint"></strong>
+        </div>
+
+        <div class="answer" id="answer"></div>
+
+        <div class="letters" id="letters"></div>
+
+        <div class="message" id="message"></div>
+
+        <div class="actions">
+            <button class="action" id="undo">
+                ↶ Xóa chữ cuối
+            </button>
+
+            <button class="action" id="reset">
+                ↻ Làm lại từ này
+            </button>
+
+            <button class="action primary" id="check">
+                ✓ Kiểm tra
+            </button>
+
+            <button class="action primary" id="next" hidden>
+                Tiếp theo →
+            </button>
+        </div>
+
+    </section>
+
+    <section class="card">
+        <details>
+            <summary>
+                ⚙️ Tự chọn danh sách từ vựng
+            </summary>
+
+            <p class="note">
+                Mỗi dòng viết: từ tiếng Anh | nghĩa tiếng Việt.
+                Ví dụ: banana | quả chuối
+            </p>
+
+            <textarea
+                id="custom"
+                spellcheck="false"
+                placeholder="apple | quả táo&#10;banana | quả chuối">
+            </textarea>
+
+            <button class="action primary" id="apply">
+                Áp dụng danh sách của tôi
+            </button>
+
+            <button class="action" id="default">
+                Khôi phục 40 từ mẫu
+            </button>
+
+            <p id="customMsg" class="note"></p>
+        </details>
+    </section>
+
+    <footer>
+        Game chạy trực tiếp, không cần Internet.
+    </footer>
+
+</div>
+
+<script>
+
+    // DANH SÁCH 40 TỪ VỰNG MẪU
+
+    const sample = [
+        ["apple", "quả táo"],
+        ["banana", "quả chuối"],
+        ["orange", "quả cam"],
+        ["grape", "quả nho"],
+        ["mango", "quả xoài"],
+        ["lemon", "quả chanh"],
+        ["peach", "quả đào"],
+        ["melon", "quả dưa"],
+        ["cherry", "quả anh đào"],
+        ["carrot", "cà rốt"],
+        ["potato", "khoai tây"],
+        ["tomato", "cà chua"],
+        ["onion", "hành tây"],
+        ["school", "trường học"],
+        ["teacher", "giáo viên"],
+        ["student", "học sinh"],
+        ["pencil", "bút chì"],
+        ["eraser", "cục tẩy"],
+        ["notebook", "quyển vở"],
+        ["window", "cửa sổ"],
+        ["garden", "khu vườn"],
+        ["flower", "bông hoa"],
+        ["forest", "rừng"],
+        ["river", "dòng sông"],
+        ["mountain", "núi"],
+        ["ocean", "đại dương"],
+        ["planet", "hành tinh"],
+        ["summer", "mùa hè"],
+        ["winter", "mùa đông"],
+        ["spring", "mùa xuân"],
+        ["family", "gia đình"],
+        ["mother", "mẹ"],
+        ["father", "bố"],
+        ["sister", "chị hoặc em gái"],
+        ["brother", "anh hoặc em trai"],
+        ["friend", "bạn bè"],
+        ["happy", "vui vẻ"],
+        ["strong", "mạnh mẽ"],
+        ["purple", "màu tím"],
+        ["yellow", "màu vàng"]
+    ];
+
+    // CÁC BIẾN QUẢN LÝ TRÒ CHƠI
+
+    let words = sample.map(([word, hint]) => ({
+        word,
+        hint
+    }));
+
+    let index = 0;
+    let score = 0;
+    let selected = [];
+    let tiles = [];
+    let done = false;
+
+    // TÌM PHẦN TỬ HTML THEO ID
+
+    const $ = id => document.getElementById(id);
+
+    // XÁO TRỘN CHỮ CÁI
+
+    function shuffle(word) {
+        const a = [...word].map((letter, id) => ({
+            letter,
+            id
+        }));
+
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+
+        if (
+            a.map(x => x.letter).join("") === word &&
+            a.length > 1
+        ) {
+            [a[0], a[a.length - 1]] =
+                [a[a.length - 1], a[0]];
+        }
+
+        return a;
+    }
+
+    // HIỂN THỊ CÂU HỎI
+
+    function draw() {
+        const item = words[index];
+
+        tiles = shuffle(item.word);
+        selected = [];
+        done = false;
+
+        $("hint").textContent = item.hint;
+        $("message").textContent = "";
+        $("message").className = "message";
+
+        $("check").hidden = false;
+        $("next").hidden = true;
+
+        $("counter").textContent =
+            `Từ ${index + 1} / ${words.length}`;
+
+        $("score").textContent =
+            `⭐ Đúng: ${score}`;
+
+        $("progress").style.width =
+            `${index / words.length * 100}%`;
+
+        render();
+    }
+
+    // HIỂN THỊ CÁC CHỮ CÁI
+
+    function render() {
+        const answer = $("answer");
+        const letters = $("letters");
+
+        answer.replaceChildren();
+        letters.replaceChildren();
+
+        const item = words[index];
+
+        for (let i = 0; i < item.word.length; i++) {
+            const id = selected[i];
+
+            if (id === undefined) {
+                const slot = document.createElement("span");
+
+                slot.className = "empty";
+                answer.append(slot);
+
+            } else {
+                const b = document.createElement("button");
+
+                b.className = "tile";
+                b.textContent =
+                    tiles.find(t => t.id === id).letter;
+
+                b.title = "Bấm để bỏ chữ này";
+                b.disabled = done;
+
+                b.onclick = () => {
+                    selected.splice(i, 1);
+                    render();
+                };
+
+                answer.append(b);
+            }
+        }
+
+        for (const tile of tiles) {
+            if (selected.includes(tile.id)) {
+                continue;
+            }
+
+            const b = document.createElement("button");
+
+            b.className = "tile";
+            b.textContent = tile.letter;
+            b.disabled = done;
+
+            b.onclick = () => {
+                selected.push(tile.id);
+                render();
+            };
+
+            letters.append(b);
+        }
+    }
+
+    // NÚT XÓA CHỮ CUỐI
+
+    $("undo").onclick = () => {
+        if (!done) {
+            selected.pop();
+            render();
+        }
+    };
+
+    // NÚT LÀM LẠI
+
+    $("reset").onclick = () => {
+        if (!done) {
+            selected = [];
+            render();
+            $("message").textContent = "";
+        }
+    };
+
+    // KIỂM TRA ĐÁP ÁN
+
+    $("check").onclick = () => {
+        const attempt = selected
+            .map(id => tiles.find(t => t.id === id).letter)
+            .join("");
+
+        if (attempt.length !== words[index].word.length) {
+            $("message").textContent =
+                "Hãy chọn đủ các chữ cái nhé!";
+
+            $("message").className = "message error";
+            return;
+        }
+
+        if (attempt === words[index].word) {
+            score++;
+            done = true;
+
+            $("message").textContent =
+                "🎉 Chính xác! Giỏi lắm!";
+
+            $("message").className = "message success";
+
+            $("score").textContent = `⭐ Đúng: ${score}`;
+
+            $("check").hidden = true;
+            $("next").hidden = false;
+
+            $("next").textContent =
+                index === words.length - 1
+                ? "Xem kết quả →"
+                : "Tiếp theo →";
+
+            render();
+
+        } else {
+            $("message").textContent =
+                "❌ Chưa đúng. Hãy thử sắp xếp lại!";
+
+            $("message").className = "message error";
+        }
+    };
+
+    // CHUYỂN SANG TỪ TIẾP THEO
+
+    $("next").onclick = () => {
+        if (index < words.length - 1) {
+            index++;
+            draw();
+
+        } else {
+            $("progress").style.width = "100%";
+
+            $("hint").textContent =
+                `Hoàn thành ${words.length} từ!`;
+
+            $("message").textContent =
+                `🏆 Bạn đã trả lời đúng ${score}/${words.length} từ!`;
+
+            $("answer").replaceChildren();
+            $("letters").replaceChildren();
+
+            $("check").hidden = true;
+
+            $("next").textContent = "Chơi lại ↻";
+
+            $("next").onclick = () => {
+                index = 0;
+                score = 0;
+                $("next").onclick = nextNormal;
+                draw();
+            };
+        }
+    };
+
+    const nextNormal = $("next").onclick;
+
+    // ĐỌC DANH SÁCH TỪ VỰNG NGƯỜI DÙNG NHẬP
+
+    function parseInput(text) {
+        const lines = text
+            .split(/\r?\n/)
+            .map(x => x.trim())
+            .filter(Boolean);
+
+        if (!lines.length) {
+            throw Error("Vui lòng nhập ít nhất 1 từ.");
+        }
+
+        const result = lines.map((line, i) => {
+            const parts = line.split("|");
+
+            const word = (parts[0] || "")
+                .trim()
+                .toLowerCase();
+
+            const hint = (parts[1] || "").trim();
+
+            if (
+                parts.length !== 2 ||
+                !/^[a-z]{2,20}$/.test(word) ||
+                !hint
+            ) {
+                throw Error(
+                    `Dòng ${i + 1} chưa đúng định dạng: english | nghĩa tiếng Việt`
+                );
+            }
+
+            return { word, hint };
+        });
+
+        if (
+            new Set(result.map(x => x.word)).size !==
+            result.length
+        ) {
+            throw Error("Danh sách có từ tiếng Anh bị trùng.");
+        }
+
+        return result;
+    }
+
+    // ÁP DỤNG DANH SÁCH TỪ VỰNG MỚI
+
+    $("apply").onclick = () => {
+        try {
+            words = parseInput($("custom").value);
+
+            index = 0;
+            score = 0;
+
+            $("next").onclick = nextNormal;
+
+            draw();
+
+            $("customMsg").textContent =
+                `Đã áp dụng ${words.length} từ!`;
+
+        } catch (e) {
+            $("customMsg").textContent = e.message;
+        }
+    };
+
+    // KHÔI PHỤC 40 TỪ MẪU
+
+    $("default").onclick = () => {
+        words = sample.map(([word, hint]) => ({
+            word,
+            hint
+        }));
+
+        index = 0;
+        score = 0;
+
+        $("custom").value = "";
+        $("next").onclick = nextNormal;
+
+        draw();
+
+        $("customMsg").textContent =
+            "Đã khôi phục danh sách 40 từ mẫu.";
+    };
+
+    // KHỞI ĐỘNG GAME
+
+    draw();
+
+</script>
+
+</body>
+</html>
