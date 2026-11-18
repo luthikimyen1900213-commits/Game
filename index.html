@@ -1,1049 +1,470 @@
-
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>English Picture Quiz - Face & Shoulder</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>English Audio A/B Quiz</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
 
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/pose.js"></script>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #dbeafe, #f3e8ff);
+      color: #1e3a8a;
+      padding: 20px;
+    }
 
-<style>
-* {
-    box-sizing: border-box;
-}
+    .game {
+      max-width: 900px;
+      margin: auto;
+      background: white;
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: 0 12px 35px rgba(0,0,0,0.12);
+      text-align: center;
+    }
 
-body {
-    margin: 0;
-    padding: 16px;
-    font-family: Arial, sans-serif;
-    background: linear-gradient(135deg, #dbeafe, #ede9fe);
-    color: #172554;
-}
+    h1 {
+      margin-top: 0;
+      color: #2563eb;
+    }
 
-.game {
-    max-width: 850px;
-    margin: auto;
-    padding: 22px;
-    background: white;
-    border-radius: 22px;
-    text-align: center;
-    box-shadow: 0 10px 30px #0002;
-}
+    .sub {
+      color: #64748b;
+      margin-bottom: 16px;
+    }
 
-h1 {
-    color: #2563eb;
-    margin: 8px 0;
-}
+    .stats {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-weight: bold;
+      margin: 16px 0;
+      flex-wrap: wrap;
+    }
 
-.stats {
-    display: flex;
-    justify-content: space-between;
-    margin: 18px 0;
-    font-weight: bold;
-}
+    .progress {
+      height: 12px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 18px;
+    }
 
-.progress, .meter {
-    height: 12px;
-    background: #e2e8f0;
-    border-radius: 20px;
-    overflow: hidden;
-}
+    .fill {
+      height: 100%;
+      width: 0%;
+      background: #6366f1;
+      transition: width 0.3s;
+    }
 
-.fill, .meterFill {
-    height: 100%;
-    width: 0%;
-    transition: width 0.1s linear;
-}
+    .question-box {
+      background: #f8fafc;
+      border-radius: 20px;
+      padding: 18px;
+      margin-bottom: 18px;
+    }
 
-.fill {
-    background: #6366f1;
-}
+    .question-title {
+      font-size: 28px;
+      margin: 0 0 10px 0;
+    }
 
-.meterFill {
-    background: #22c55e;
-}
+    .audio-word {
+      font-size: 18px;
+      color: #475569;
+      min-height: 24px;
+      margin-top: 10px;
+    }
 
-.picture {
-    background: #f8fafc;
-    border-radius: 20px;
-    margin: 16px 0;
-    padding: 15px;
-    font-size: 95px;
-}
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
 
-.answers {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-}
+    .controls button {
+      border: none;
+      border-radius: 12px;
+      padding: 14px 18px;
+      background: #2563eb;
+      color: white;
+      font-weight: bold;
+      font-size: 15px;
+      cursor: pointer;
+    }
 
-.answer {
-    padding: 18px;
-    border-radius: 16px;
-    border: 4px solid transparent;
-    font-size: 23px;
-    font-weight: bold;
-    cursor: pointer;
-}
+    .controls button:hover {
+      opacity: 0.95;
+    }
 
-.a {
-    background: #dbeafe;
-    color: #1d4ed8;
-}
+    .answers {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 14px;
+    }
 
-.b {
-    background: #fee2e2;
-    color: #b91c1c;
-}
+    .card {
+      border: 4px solid transparent;
+      border-radius: 20px;
+      padding: 18px;
+      cursor: pointer;
+      transition: 0.2s;
+      min-height: 260px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
 
-.answer.active {
-    border-color: #22c55e;
-    transform: scale(1.02);
-}
+    .card:hover {
+      transform: translateY(-3px);
+    }
 
-.answer:disabled {
-    opacity: 0.6;
-}
+    .card.a {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
 
-#message {
-    min-height: 30px;
-    margin: 14px 0;
-    font-size: 20px;
-    font-weight: bold;
-}
+    .card.b {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
 
-.camera {
-    position: relative;
-    max-width: 580px;
-    margin: 12px auto;
-    aspect-ratio: 4 / 3;
-    background: #111827;
-    border-radius: 18px;
-    overflow: hidden;
-}
+    .card.correct {
+      border-color: #22c55e;
+      box-shadow: 0 0 0 4px rgba(34,197,94,0.15);
+    }
 
-video, canvas {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    transform: scaleX(-1);
-}
+    .card.wrong {
+      border-color: #ef4444;
+      box-shadow: 0 0 0 4px rgba(239,68,68,0.15);
+    }
 
-video {
-    object-fit: fill;
-}
+    .option-label {
+      font-size: 28px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
 
-.zones {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    pointer-events: none;
-}
+    .option-image {
+      font-size: 90px;
+      margin: 8px 0 10px;
+    }
 
-.zone {
-    width: 50%;
-    padding: 12px;
-    font-size: 25px;
-    color: white;
-    font-weight: bold;
-    border: 3px solid #ffffff44;
-    text-shadow: 0 2px 5px black;
-}
+    .option-word {
+      font-size: 28px;
+      font-weight: bold;
+    }
 
-.zone:first-child {
-    background: #2563eb18;
-}
+    #message {
+      min-height: 36px;
+      font-size: 22px;
+      font-weight: bold;
+      margin: 20px 0 10px;
+    }
 
-.zone:last-child {
-    background: #ef444418;
-}
+    .teacher-note {
+      margin-top: 18px;
+      color: #64748b;
+      font-size: 14px;
+      line-height: 1.6;
+      background: #f8fafc;
+      padding: 14px;
+      border-radius: 14px;
+      text-align: left;
+    }
 
-.zone.activeA {
-    background: #2563eb66;
-    border-color: #60a5fa;
-}
+    @media (max-width: 700px) {
+      .answers {
+        grid-template-columns: 1fr;
+      }
 
-.zone.activeB {
-    background: #ef444466;
-    border-color: #f87171;
-}
+      .option-image {
+        font-size: 70px;
+      }
 
-.meter {
-    max-width: 580px;
-    margin: 12px auto;
-}
+      .option-word {
+        font-size: 24px;
+      }
 
-.controls {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin: 15px 0;
-}
-
-.controls button {
-    padding: 13px 17px;
-    border: none;
-    border-radius: 12px;
-    background: #2563eb;
-    color: white;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.controls button:disabled {
-    opacity: 0.5;
-}
-
-#status {
-    min-height: 26px;
-    font-weight: bold;
-    color: #475569;
-}
-
-.note {
-    font-size: 14px;
-    color: #64748b;
-    line-height: 1.6;
-}
-
-@media (max-width: 520px) {
-    .game { padding: 12px; }
-    h1 { font-size: 23px; }
-    .picture { font-size: 75px; }
-    .answer { font-size: 18px; padding: 14px; }
-}
-</style>
+      .question-title {
+        font-size: 24px;
+      }
+    }
+  </style>
 </head>
-
 <body>
 
-<main class="game">
-
-    <h1>🎮 English Picture Quiz</h1>
-
-    <p>Look at the picture and choose A or B!</p>
+  <div class="game">
+    <h1>🎧 English Audio A/B Quiz</h1>
+    <div class="sub">Teacher plays the audio, student chooses A or B.</div>
 
     <div class="stats">
-        <span id="progressText">Question 1/20</span>
-        <span id="score">⭐ Score: 0</span>
+      <div id="questionInfo">Question 1/20</div>
+      <div id="scoreInfo">⭐ Score: 0</div>
     </div>
 
     <div class="progress">
-        <div class="fill" id="progressFill"></div>
+      <div class="fill" id="progressFill"></div>
     </div>
 
-    <h2 id="questionTitle">What is this?</h2>
-
-    <div class="picture" id="picture">🎒</div>
+    <div class="question-box">
+      <h2 class="question-title">Listen and choose the correct answer</h2>
+      <div class="controls">
+        <button onclick="playAudio()">🔊 Play Audio</button>
+        <button onclick="replayGame()">🔄 Replay</button>
+      </div>
+      <div class="audio-word" id="audioHint">Teacher presses “Play Audio”.</div>
+    </div>
 
     <div class="answers">
-        <button id="answerA"
-                class="answer a"
-                onclick="choose('A')">
-            A. Bag
-        </button>
+      <div class="card a" id="cardA" onclick="chooseAnswer('A')">
+        <div class="option-label">A</div>
+        <div class="option-image" id="imgA">🎒</div>
+        <div class="option-word" id="wordA">Bag</div>
+      </div>
 
-        <button id="answerB"
-                class="answer b"
-                onclick="choose('B')">
-            B. Book
-        </button>
+      <div class="card b" id="cardB" onclick="chooseAnswer('B')">
+        <div class="option-label">B</div>
+        <div class="option-image" id="imgB">📖</div>
+        <div class="option-word" id="wordB">Book</div>
+      </div>
     </div>
 
     <div id="message"></div>
 
-    <h3>📷 Face & Shoulder Controller</h3>
-
-    <div class="camera">
-
-        <video id="video"
-               autoplay
-               muted
-               playsinline></video>
-
-        <canvas id="overlay"
-                width="640"
-                height="480"></canvas>
-
-        <div class="zones">
-            <div id="zoneA" class="zone">⬅ A</div>
-            <div id="zoneB" class="zone">B ➡</div>
-        </div>
-
+    <div class="teacher-note">
+      <strong>Hướng dẫn dùng:</strong><br>
+      1. Giáo viên bấm <strong>Play Audio</strong>.<br>
+      2. Học viên nghe từ được đọc.<br>
+      3. Học viên chọn <strong>A</strong> hoặc <strong>B</strong>.<br>
+      4. Mỗi câu đúng được <strong>10 điểm</strong>.<br>
+      5. Bản này dùng giọng đọc tự động của trình duyệt. Nếu bạn muốn thay bằng file mp3 riêng, mình có thể sửa tiếp cho bạn.
     </div>
+  </div>
 
-    <div class="meter">
-        <div id="meterFill" class="meterFill"></div>
-    </div>
+  <script>
+    // ==============================
+    // 1. DANH SÁCH 6 TỪ
+    // ==============================
+    const vocabulary = [
+      { word: "Bag", image: "🎒" },
+      { word: "Ruler", image: "📏" },
+      { word: "Pen", image: "🖊️" },
+      { word: "Pencil", image: "✏️" },
+      { word: "Book", image: "📖" },
+      
+    ];
 
-    <p id="status">
-        Press Start Camera to begin.
-    </p>
+    const TOTAL_QUESTIONS = 20;
 
-    <div class="controls">
+    // ==============================
+    // 2. BIẾN GAME
+    // ==============================
+    let questions = [];
+    let currentIndex = 0;
+    let score = 0;
+    let locked = false;
 
-        <button id="startBtn" onclick="startCamera()">
-            📷 Start Camera
-        </button>
+    // ==============================
+    // 3. HÀM TIỆN ÍCH
+    // ==============================
+    function $(id) {
+      return document.getElementById(id);
+    }
 
-        <button id="calibrateBtn"
-                onclick="calibrate()" disabled>
-            🎯 Place the middle position
-        </button>
-
-        <button onclick="restart()">
-            🔄 Replay
-        </button>
-
-    </div>
-
-    <p class="note">
-        Camera chỉ cần nhìn thấy mặt và hai vai.
-        Nhấn Place the middle position một lần.
-        Nghiêng sang trái chọn A, sang phải chọn B.
-        Sau mỗi câu, ngồi thẳng lại rồi tiếp tục.
-    </p>
-
-</main>
-
-<script>
-
-// ====================================
-// 1. TỪ VỰNG
-// ====================================
-
-const vocabulary = [
-    { word: "Bag", image: "🎒" },
-    { word: "Ruler", image: "📏" },
-    { word: "Pen", image: "🖊️" },
-    { word: "Pencil", image: "✏️" },
-    { word: "Book", image: "📖" }
-];
-
-const TOTAL_QUESTIONS = 20;
-
-let questions = [];
-
-const $ = id => document.getElementById(id);
-
-// ====================================
-// 2. TẠO 20 CÂU NGẪU NHIÊN
-// ====================================
-
-function shuffle(array) {
-
-    for (let i = array.length - 1; i > 0; i--) {
-
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-
-        [array[i], array[j]] =
-            [array[j], array[i]];
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
     }
 
-    return array;
-}
+    // ==============================
+    // 4. TẠO 20 CÂU HỎI
+    // ==============================
+    function createQuestions() {
+      questions = [];
 
-function createQuestions() {
+      const temp = [];
 
-    questions = [];
+      // tạo 20 câu tương đối đều 6 từ
+      for (let i = 0; i < TOTAL_QUESTIONS; i++) {
+        temp.push(vocabulary[i % vocabulary.length]);
+      }
 
-    // Mỗi từ xuất hiện 4 lần
-    for (let round = 0; round < 4; round++) {
+      shuffle(temp);
 
-        for (const item of vocabulary) {
-
-            const others = vocabulary.filter(
-                x => x.word !== item.word
-            );
-
-            // Mỗi lượt dùng một đáp án gây nhiễu khác
-            const wrong = others[
-                (vocabulary.indexOf(item) + round) %
-                others.length
-            ];
-
-            questions.push({
-                image: item.image,
-                correctWord: item.word,
-                wrongWord: wrong.word
-            });
-        }
-    }
-
-    // Trộn câu hỏi
-    shuffle(questions);
-
-    // Hạn chế hai câu liên tiếp có cùng hình
-    for (let i = 1; i < questions.length; i++) {
-
-        if (
-            questions[i].correctWord ===
-            questions[i - 1].correctWord
-        ) {
-
-            const swapIndex = questions.findIndex(
-                (q, j) =>
-                    j > i &&
-                    q.correctWord !==
-                    questions[i - 1].correctWord &&
-                    (
-                        i === questions.length - 1 ||
-                        q.correctWord !==
-                        questions[i + 1].correctWord
-                    )
-            );
-
-            if (swapIndex > i) {
-
-                [questions[i], questions[swapIndex]] =
-                    [questions[swapIndex], questions[i]];
+      // tránh lặp 2 câu giống nhau liên tiếp nếu có thể
+      for (let i = 1; i < temp.length; i++) {
+        if (temp[i].word === temp[i - 1].word) {
+          for (let j = i + 1; j < temp.length; j++) {
+            if (temp[j].word !== temp[i - 1].word) {
+              [temp[i], temp[j]] = [temp[j], temp[i]];
+              break;
             }
+          }
         }
-    }
+      }
 
-    // Đảo vị trí đáp án A/B ngẫu nhiên
-    questions.forEach(q => {
+      for (const correctItem of temp) {
+        const wrongList = vocabulary.filter(item => item.word !== correctItem.word);
+        const wrongItem = wrongList[Math.floor(Math.random() * wrongList.length)];
 
+        // ngẫu nhiên đúng ở A hoặc B
+        let question;
         if (Math.random() < 0.5) {
-            q.A = q.correctWord;
-            q.B = q.wrongWord;
-            q.correct = "A";
+          question = {
+            target: correctItem,
+            A: correctItem,
+            B: wrongItem,
+            correct: "A"
+          };
         } else {
-            q.A = q.wrongWord;
-            q.B = q.correctWord;
-            q.correct = "B";
+          question = {
+            target: correctItem,
+            A: wrongItem,
+            B: correctItem,
+            correct: "B"
+          };
         }
-    });
-}
 
-// ====================================
-// 3. QUẢN LÝ TRÒ CHƠI
-// ====================================
+        questions.push(question);
+      }
+    }
 
-let index = 0;
-let score = 0;
-let locked = false;
-let finished = false;
-let nextTimer = null;
-
-function showQuestion() {
-
-    resetSelection();
-
-    if (index >= questions.length) {
-
-        finished = true;
-        locked = true;
-
-        $("picture").textContent = "🏆";
-
-        $("questionTitle").textContent =
-            "Congratulations!";
-
-        $("message").textContent =
-            "Final score: " + score +
-            "/" + (questions.length * 10);
-
-        $("message").style.color = "green";
-
-        $("answerA").style.display = "none";
-        $("answerB").style.display = "none";
-
-        $("progressText").textContent = "Completed";
-        $("progressFill").style.width = "100%";
-
-        $("status").textContent =
-            "Game finished! Press Replay.";
-
+    // ==============================
+    // 5. HIỂN THỊ CÂU HỎI
+    // ==============================
+    function showQuestion() {
+      if (currentIndex >= questions.length) {
+        showFinalResult();
         return;
+      }
+
+      locked = false;
+      $("message").textContent = "";
+      $("audioHint").textContent = "Teacher presses “Play Audio”.";
+      resetCardStyles();
+
+      const q = questions[currentIndex];
+
+      $("imgA").textContent = q.A.image;
+      $("wordA").textContent = q.A.word;
+
+      $("imgB").textContent = q.B.image;
+      $("wordB").textContent = q.B.word;
+
+      $("questionInfo").textContent = `Question ${currentIndex + 1}/${questions.length}`;
+      $("scoreInfo").textContent = `⭐ Score: ${score}`;
+      $("progressFill").style.width = `${(currentIndex / questions.length) * 100}%`;
     }
 
-    locked = false;
+    // ==============================
+    // 6. PHÁT AUDIO
+    // ==============================
+    function playAudio() {
+      if (currentIndex >= questions.length) return;
 
-    // Chỉ yêu cầu ngồi thẳng lại,
-    // KHÔNG yêu cầu bấm hiệu chỉnh lần nữa.
-    needsCenter = true;
-    centerSince = null;
+      const q = questions[currentIndex];
+      const targetWord = q.target.word;
 
-    const q = questions[index];
+      $("audioHint").textContent = `Playing audio: ${targetWord}`;
 
-    $("picture").textContent = q.image;
+      window.speechSynthesis.cancel();
 
-    $("answerA").textContent = "A. " + q.A;
-    $("answerB").textContent = "B. " + q.B;
+      const utterance = new SpeechSynthesisUtterance(targetWord);
+      utterance.lang = "en-US";
+      utterance.rate = 0.85;
+      utterance.pitch = 1;
+      utterance.volume = 1;
 
-    $("answerA").style.display = "";
-    $("answerB").style.display = "";
-
-    $("answerA").disabled = false;
-    $("answerB").disabled = false;
-
-    $("message").textContent = "";
-
-    $("progressText").textContent =
-        "Question " + (index + 1) +
-        "/" + questions.length;
-
-    $("score").textContent = "⭐ Score: " + score;
-
-    $("progressFill").style.width =
-        (index / questions.length * 100) + "%";
-
-    if (neutralX !== null) {
-        $("status").textContent =
-            "Sit in the middle to continue.";
+      window.speechSynthesis.speak(utterance);
     }
-}
 
-// ====================================
-// 4. CHỌN ĐÁP ÁN
-// ====================================
+    // ==============================
+    // 7. CHỌN ĐÁP ÁN
+    // ==============================
+    function chooseAnswer(choice) {
+      if (locked || currentIndex >= questions.length) return;
 
-function choose(side) {
+      locked = true;
+      const q = questions[currentIndex];
 
-    if (locked || finished) return;
-
-    locked = true;
-
-    resetSelection();
-
-    const q = questions[index];
-
-    if (side === q.correct) {
-
+      if (choice === q.correct) {
         score += 10;
-
-        $("message").textContent =
-            "✅ Correct! +10 points";
-
+        $("message").textContent = "✅ Correct! +10 points";
         $("message").style.color = "green";
-
-    } else {
-
+        $("card" + choice).classList.add("correct");
+      } else {
         $("message").textContent =
-            "❌ Incorrect! Correct answer: " +
-            q.correct + ". " + q.correctWord;
-
+          `❌ Incorrect! Correct answer: ${q.correct} - ${q.target.word}`;
         $("message").style.color = "red";
-    }
 
-    $("score").textContent = "⭐ Score: " + score;
+        $("card" + choice).classList.add("wrong");
+        $("card" + q.correct).classList.add("correct");
+      }
 
-    $("answerA").disabled = true;
-    $("answerB").disabled = true;
+      $("scoreInfo").textContent = `⭐ Score: ${score}`;
 
-    nextTimer = setTimeout(() => {
-
-        nextTimer = null;
-        index++;
-
+      setTimeout(() => {
+        currentIndex++;
         showQuestion();
-
-    }, 1100);
-}
-
-// ====================================
-// 5. CHƠI LẠI
-// ====================================
-
-function restart() {
-
-    if (nextTimer !== null) {
-        clearTimeout(nextTimer);
-        nextTimer = null;
+      }, 1200);
     }
 
-    index = 0;
-    score = 0;
-    locked = false;
-    finished = false;
+    // ==============================
+    // 8. KẾT QUẢ CUỐI
+    // ==============================
+    function showFinalResult() {
+      $("questionInfo").textContent = "Completed";
+      $("progressFill").style.width = "100%";
+      $("audioHint").textContent = "Game finished.";
+      $("message").textContent = `🏆 Final Score: ${score}/${questions.length * 10}`;
+      $("message").style.color = "#2563eb";
 
-    $("questionTitle").textContent =
-        "What is this?";
+      $("imgA").textContent = "🏁";
+      $("wordA").textContent = "Finished";
 
+      $("imgB").textContent = "🎉";
+      $("wordB").textContent = "Great Job";
+
+      resetCardStyles();
+    }
+
+    // ==============================
+    // 9. RESET STYLE
+    // ==============================
+    function resetCardStyles() {
+      $("cardA").classList.remove("correct", "wrong");
+      $("cardB").classList.remove("correct", "wrong");
+    }
+
+    // ==============================
+    // 10. CHƠI LẠI
+    // ==============================
+    function replayGame() {
+      window.speechSynthesis.cancel();
+      currentIndex = 0;
+      score = 0;
+      locked = false;
+      createQuestions();
+      showQuestion();
+    }
+
+    // ==============================
+    // 11. KHỞI ĐỘNG
+    // ==============================
     createQuestions();
-
     showQuestion();
-
-    // Không xóa neutralX.
-    // Vì vậy không phải hiệu chỉnh lại camera.
-}
-
-// ====================================
-// 6. CAMERA
-// ====================================
-
-const video = $("video");
-
-const canvas = $("overlay");
-const ctx = canvas.getContext("2d");
-
-let pose = null;
-let stream = null;
-
-let cameraRunning = false;
-
-// Vị trí đứng/ngồi giữa đã hiệu chỉnh
-let neutralX = null;
-
-// Vị trí mặt và vai hiện tại
-let bodyX = null;
-let filteredX = null;
-
-// Trạng thái điều khiển
-let choiceSide = null;
-let choiceStart = 0;
-let needsCenter = true;
-let centerSince = null;
-
-// ====================================
-// 7. CÀI ĐẶT ĐỘ NHẠY
-// ====================================
-
-// Nghiêng khoảng 5,5% khung hình
-const MOVE_THRESHOLD = 0.055;
-
-// Vùng giữa nhỏ hơn ngưỡng chọn
-const CENTER_THRESHOLD = 0.035;
-
-// Giữ 350ms để xác nhận
-const HOLD_TIME = 350;
-
-// Giữ vị trí giữa 100ms để mở câu mới
-const CENTER_HOLD = 100;
-
-// ====================================
-// 8. BẬT CAMERA
-// ====================================
-
-async function startCamera() {
-
-    if (cameraRunning) return;
-
-    if (!navigator.mediaDevices?.getUserMedia) {
-
-        $("status").textContent =
-            "Camera needs HTTPS or localhost.";
-
-        return;
-    }
-
-    $("startBtn").disabled = true;
-
-    $("status").textContent =
-        "Starting camera and AI...";
-
-    try {
-
-        if (typeof Pose === "undefined") {
-            throw new Error(
-                "Cannot load MediaPipe Pose."
-            );
-        }
-
-        if (!pose) {
-
-            pose = new Pose({
-                locateFile: file =>
-                    "https://cdn.jsdelivr.net/npm/" +
-                    "@mediapipe/pose@0.5.1675469404/" +
-                    file
-            });
-
-            pose.setOptions({
-                modelComplexity: 0,
-                smoothLandmarks: true,
-                minDetectionConfidence: 0.5,
-                minTrackingConfidence: 0.5
-            });
-
-            pose.onResults(onPoseResults);
-        }
-
-        stream =
-            await navigator.mediaDevices.getUserMedia({
-
-                video: {
-                    width: { ideal: 480 },
-                    height: { ideal: 360 },
-                    frameRate: { ideal: 30 },
-                    facingMode: "user"
-                },
-
-                audio: false
-            });
-
-        video.srcObject = stream;
-
-        await video.play();
-
-        cameraRunning = true;
-
-        neutralX = null;
-        bodyX = null;
-        filteredX = null;
-
-        $("calibrateBtn").disabled = true;
-
-        $("status").textContent =
-            "Show your face and shoulders.";
-
-        requestAnimationFrame(processCamera);
-
-    } catch (error) {
-
-        cameraRunning = false;
-
-        $("status").textContent =
-            "Camera error: " + error.message;
-
-        $("startBtn").disabled = false;
-
-        if (stream) {
-
-            stream.getTracks().forEach(
-                track => track.stop()
-            );
-
-            stream = null;
-        }
-    }
-}
-
-// ====================================
-// 9. XỬ LÝ CAMERA
-// ====================================
-
-async function processCamera() {
-
-    if (!cameraRunning) return;
-
-    try {
-
-        if (video.readyState >= 2) {
-
-            await pose.send({
-                image: video
-            });
-        }
-
-    } catch (error) {
-
-        cameraRunning = false;
-
-        $("status").textContent =
-            "AI error: " + error.message;
-
-        $("startBtn").disabled = false;
-        $("calibrateBtn").disabled = true;
-
-        if (stream) {
-
-            stream.getTracks().forEach(
-                track => track.stop()
-            );
-
-            stream = null;
-        }
-
-        return;
-    }
-
-    if (cameraRunning) {
-        requestAnimationFrame(processCamera);
-    }
-}
-
-// ====================================
-// 10. NHẬN DIỆN MẶT VÀ HAI VAI
-// ====================================
-
-function onPoseResults(results) {
-
-    ctx.clearRect(
-        0, 0, canvas.width, canvas.height
-    );
-
-    const landmarks = results.poseLandmarks;
-
-    if (!landmarks) {
-
-        bodyX = null;
-        filteredX = null;
-        centerSince = null;
-
-        resetSelection();
-
-        $("calibrateBtn").disabled = true;
-
-        $("status").textContent =
-            "Show your face and shoulders.";
-
-        return;
-    }
-
-    // 0 = mũi
-    // 11 = vai trái
-    // 12 = vai phải
-
-    const ids = [0, 11, 12];
-
-    const visible = ids.every(i =>
-        (landmarks[i].visibility ?? 1) > 0.4
-    );
-
-    if (!visible) {
-
-        bodyX = null;
-        filteredX = null;
-        centerSince = null;
-
-        resetSelection();
-
-        $("calibrateBtn").disabled = true;
-
-        $("status").textContent =
-            "Please show face and both shoulders.";
-
-        return;
-    }
-
-    // Trung điểm hai vai
-    const rawX =
-        (landmarks[11].x + landmarks[12].x) / 2;
-
-    // Lật theo góc nhìn camera selfie
-    const mirroredX = 1 - rawX;
-
-    // Lọc nhẹ để hạn chế giật
-    if (filteredX === null) {
-
-        filteredX = mirroredX;
-
-    } else {
-
-        filteredX =
-            0.75 * mirroredX +
-            0.25 * filteredX;
-    }
-
-    bodyX = filteredX;
-
-    // Vẽ 3 chấm trên mũi và hai vai
-    for (const i of ids) {
-
-        ctx.beginPath();
-
-        ctx.arc(
-            landmarks[i].x * canvas.width,
-            landmarks[i].y * canvas.height,
-            8,
-            0,
-            Math.PI * 2
-        );
-
-        ctx.fillStyle = "#22c55e";
-        ctx.fill();
-    }
-
-    // Vẽ đường nối hai vai
-    ctx.beginPath();
-
-    ctx.moveTo(
-        landmarks[11].x * canvas.width,
-        landmarks[11].y * canvas.height
-    );
-
-    ctx.lineTo(
-        landmarks[12].x * canvas.width,
-        landmarks[12].y * canvas.height
-    );
-
-    ctx.strokeStyle = "#facc15";
-    ctx.lineWidth = 4;
-    ctx.stroke();
-
-    // Có thể hiệu chỉnh khi nhận diện được
-    $("calibrateBtn").disabled = false;
-
-    updateBodyControl();
-}
-
-// ====================================
-// 11. HIỆU CHỈNH VỊ TRÍ GIỮA
-// ====================================
-
-function calibrate() {
-
-    if (bodyX === null) {
-
-        $("status").textContent =
-            "Face and shoulders not detected.";
-
-        return;
-    }
-
-    neutralX = bodyX;
-
-    needsCenter = false;
-    centerSince = null;
-
-    resetSelection();
-
-    $("status").textContent =
-        "Ready! Lean left A or right B.";
-}
-
-// ====================================
-// 12. ĐIỀU KHIỂN BẰNG VAI
-// ====================================
-
-function updateBodyControl() {
-
-    // Chưa hiệu chỉnh thì chưa chọn được
-    if (neutralX === null) {
-
-        $("status").textContent =
-            "Press Place the middle position once.";
-
-        return;
-    }
-
-    if (locked || finished || bodyX === null) {
-        return;
-    }
-
-    const distance = bodyX - neutralX;
-
-    const now = performance.now();
-
-    // TỰ ĐỘNG NHẬN KHI NGỒI THẲNG LẠI
-    if (needsCenter) {
-
-        resetSelection();
-
-        if (
-            Math.abs(distance) <= CENTER_THRESHOLD
-        ) {
-
-            if (centerSince === null) {
-                centerSince = now;
-            }
-
-            if (now - centerSince >= CENTER_HOLD) {
-
-                needsCenter = false;
-                centerSince = null;
-
-                $("status").textContent =
-                    "Ready! Lean left A or right B.";
-
-            }
-
-        } else {
-
-            centerSince = null;
-
-            $("status").textContent =
-                "Sit straight in the middle.";
-        }
-
-        return;
-    }
-
-    // KIỂM TRA HƯỚNG NGHIÊNG
-    let side = null;
-
-    if (distance <= -MOVE_THRESHOLD) {
-
-        side = "A";
-
-    } else if (distance >= MOVE_THRESHOLD) {
-
-        side = "B";
-    }
-
-    if (side === null) {
-
-        resetSelection();
-
-        $("status").textContent =
-            "Ready! Left A - Right B.";
-
-        return;
-    }
-
-    // ĐÁNH DẤU ĐÁP ÁN ĐANG CHỌN
-    clearZones();
-
-    $("zone" + side).classList.add(
-        side === "A" ? "activeA" : "activeB"
-    );
-
-    $("answer" + side).classList.add("active");
-
-    if (choiceSide !== side) {
-
-        choiceSide = side;
-        choiceStart = now;
-    }
-
-    // TÍNH THỜI GIAN GIỮ VỊ TRÍ
-    const elapsed = now - choiceStart;
-
-    const percent = Math.min(
-        100,
-        elapsed / HOLD_TIME * 100
-    );
-
-    $("meterFill").style.width =
-        percent + "%";
-
-    $("status").textContent =
-        "Selecting " + side + "... " +
-        Math.round(percent) + "%";
-
-    // CHỌN ĐÁP ÁN
-    if (elapsed >= HOLD_TIME) {
-
-        choose(side);
-    }
-}
-
-// ====================================
-// 13. XÓA HIỆU ỨNG LỰA CHỌN
-// ====================================
-
-function clearZones() {
-
-    $("zoneA").classList.remove("activeA");
-    $("zoneB").classList.remove("activeB");
-
-    $("answerA").classList.remove("active");
-    $("answerB").classList.remove("active");
-}
-
-function resetSelection() {
-
-    choiceSide = null;
-    choiceStart = 0;
-
-    $("meterFill").style.width = "0%";
-
-    clearZones();
-}
-
-// ====================================
-// 14. KHỞI ĐỘNG
-// ====================================
-
-createQuestions();
-showQuestion();
-
-</script>
-
+  </script>
 </body>
 </html>
