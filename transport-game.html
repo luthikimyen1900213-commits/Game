@@ -1,0 +1,1310 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Transport Listening & Camera Game</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/pose.js"></script>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 15px;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #dbeafe, #f3e8ff);
+    color: #172554;
+}
+
+.game {
+    max-width: 950px;
+    margin: auto;
+    padding: 22px;
+    background: white;
+    border-radius: 24px;
+    text-align: center;
+    box-shadow: 0 10px 35px #0002;
+}
+
+h1 {
+    color: #2563eb;
+    margin-bottom: 8px;
+}
+
+.subtitle {
+    color: #475569;
+    font-size: 17px;
+}
+
+.stats {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+    margin: 20px 0;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.progress,
+.meter {
+    height: 12px;
+    background: #e2e8f0;
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.progressFill {
+    height: 100%;
+    width: 0%;
+    background: #6366f1;
+    transition: width .3s;
+}
+
+.audioBox {
+    margin: 20px 0;
+    padding: 20px;
+    background: #eff6ff;
+    border-radius: 18px;
+}
+
+.audioBtn {
+    padding: 17px 35px;
+    border: none;
+    border-radius: 14px;
+    background: #2563eb;
+    color: white;
+    font-size: 23px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.audioBtn:hover {
+    background: #1d4ed8;
+}
+
+.audioBtn:disabled {
+    opacity: .5;
+    cursor: default;
+}
+
+#voiceSelect {
+    margin: 12px auto;
+    padding: 10px;
+    max-width: 100%;
+    border: 1px solid #cbd5e1;
+    border-radius: 9px;
+}
+
+#audioStatus {
+    min-height: 25px;
+    font-weight: bold;
+    color: #475569;
+}
+
+.answers {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin-top: 18px;
+}
+
+.answer {
+    min-height: 230px;
+    padding: 15px;
+    border: 5px solid transparent;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 10px;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+}
+
+.answer.a {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.answer.b {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.answer.active {
+    border-color: #f59e0b;
+}
+
+.answer.correct {
+    border-color: #22c55e;
+    background: #dcfce7;
+}
+
+.answer.wrong {
+    border-color: #ef4444;
+    background: #fecaca;
+}
+
+.answer:disabled {
+    cursor: default;
+}
+
+.letter {
+    font-size: 30px;
+    font-weight: bold;
+}
+
+.transportImage {
+    width: 100%;
+    max-width: 210px;
+    height: 130px;
+    object-fit: contain;
+}
+
+.word {
+    font-size: 27px;
+    font-weight: bold;
+    text-transform: capitalize;
+}
+
+#message {
+    min-height: 35px;
+    margin: 18px 0;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.camera {
+    position: relative;
+    width: 100%;
+    max-width: 580px;
+    aspect-ratio: 4/3;
+    margin: 12px auto;
+    border-radius: 20px;
+    overflow: hidden;
+    background: #111827;
+}
+
+#video,
+#overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transform: scaleX(-1);
+}
+
+#video {
+    object-fit: fill;
+}
+
+.zones {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    pointer-events: none;
+}
+
+.zone {
+    width: 50%;
+    padding: 12px;
+    color: white;
+    border: 3px solid #ffffff55;
+    font-size: 28px;
+    font-weight: bold;
+    text-shadow: 0 2px 5px #000;
+}
+
+.zone.activeA {
+    background: #2563eb66;
+    border-color: #60a5fa;
+}
+
+.zone.activeB {
+    background: #ef444466;
+    border-color: #f87171;
+}
+
+.meter {
+    max-width: 580px;
+    margin: 12px auto;
+}
+
+.meterFill {
+    height: 100%;
+    width: 0%;
+    background: #22c55e;
+}
+
+#status {
+    min-height: 25px;
+    font-weight: bold;
+    color: #475569;
+}
+
+.controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 20px 0;
+}
+
+.controls button {
+    padding: 14px 20px;
+    border: none;
+    border-radius: 12px;
+    background: #2563eb;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.controls button:disabled {
+    opacity: .5;
+}
+
+.note {
+    color: #64748b;
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+@media(max-width: 520px) {
+    body {
+        padding: 8px;
+    }
+
+    .game {
+        padding: 12px;
+    }
+
+    h1 {
+        font-size: 23px;
+    }
+
+    .answer {
+        min-height: 170px;
+        padding: 8px;
+    }
+
+    .transportImage {
+        height: 95px;
+    }
+
+    .word {
+        font-size: 20px;
+    }
+
+    .letter {
+        font-size: 24px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<main class="game">
+
+<h1>🚍 Transport Listening & Movement</h1>
+<p class="subtitle">
+    Listen to the word. Move to the correct picture!
+</p>
+
+<div class="stats">
+    <span id="counter">Question 1/20</span>
+    <span id="score">⭐ Score: 0</span>
+</div>
+
+<div class="progress">
+    <div class="progressFill" id="progressFill"></div>
+</div>
+
+<div class="audioBox">
+
+    <h2>🔊 Listen and Choose!</h2>
+
+    <button class="audioBtn"
+            id="playBtn"
+            onclick="playAudio()">
+        🔊 Play Audio
+    </button>
+
+    <div>
+        <label for="voiceSelect">English Voice:</label>
+        <select id="voiceSelect">
+            <option value="">Default English Voice</option>
+        </select>
+    </div>
+
+    <p id="audioStatus">
+        Teacher: Press Play Audio.
+    </p>
+
+</div>
+
+<div class="answers">
+
+    <button class="answer a"
+            id="answerA"
+            onclick="choose('A')"
+            disabled>
+
+        <span class="letter">A</span>
+
+        <img class="transportImage"
+             id="imageA"
+             alt="Transport A">
+
+        <span class="word" id="wordA"></span>
+
+    </button>
+
+    <button class="answer b"
+            id="answerB"
+            onclick="choose('B')"
+            disabled>
+
+        <span class="letter">B</span>
+
+        <img class="transportImage"
+             id="imageB"
+             alt="Transport B">
+
+        <span class="word" id="wordB"></span>
+
+    </button>
+
+</div>
+
+<div id="message"></div>
+
+<h3>📷 Face & Shoulder Controller</h3>
+
+<div class="camera">
+
+    <video id="video"
+           autoplay
+           muted
+           playsinline></video>
+
+    <canvas id="overlay"
+            width="640"
+            height="480"></canvas>
+
+    <div class="zones">
+        <div class="zone" id="zoneA">⬅ A</div>
+        <div class="zone" id="zoneB">B ➡</div>
+    </div>
+
+</div>
+
+<div class="meter">
+    <div class="meterFill" id="meterFill"></div>
+</div>
+
+<p id="status">Start Camera to begin.</p>
+
+<div class="controls">
+
+    <button id="startBtn" onclick="startCamera()">
+        📷 Start Camera
+    </button>
+
+    <button id="calibrateBtn"
+            onclick="calibrate()"
+            disabled>
+        🎯 Set Middle Position
+    </button>
+
+    <button onclick="restart()">
+        🔄 Replay
+    </button>
+
+</div>
+
+<p class="note">
+    Teacher presses Play Audio.<br>
+    Student listens and moves left for A or right for B.<br>
+    Camera only needs to see the face and shoulders.<br>
+    Set Middle Position once at the beginning.
+</p>
+
+</main>
+
+<script>
+
+// ==========================================
+// 1. VOCABULARY
+// ==========================================
+
+// Hình minh họa SVG được tạo trực tiếp,
+// không cần tải hình từ trang bên ngoài.
+
+function svgImage(emoji) {
+    const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg"
+         width="240" height="160"
+         viewBox="0 0 240 160">
+        <rect width="240" height="160"
+              rx="24" fill="#ffffff"/>
+        <text x="120" y="112"
+              text-anchor="middle"
+              font-size="100">${emoji}</text>
+    </svg>`;
+
+    return "data:image/svg+xml;charset=utf-8," +
+        encodeURIComponent(svg);
+}
+
+const vocabulary = [
+    {
+        word: "ferry",
+        image: svgImage("⛴️")
+    },
+    {
+        word: "taxi",
+        image: svgImage("🚕")
+    },
+    {
+        word: "trolley",
+        image: svgImage("🚋")
+    },
+    {
+        word: "bus",
+        image: svgImage("🚌")
+    },
+    {
+        word: "subway",
+        image: svgImage("🚇")
+    },
+    {
+        word: "train",
+        image: svgImage("🚆")
+    }
+];
+
+const TOTAL = 20;
+const $ = id => document.getElementById(id);
+
+let questions = [];
+let index = 0;
+let score = 0;
+let locked = false;
+let finished = false;
+let audioPlayed = false;
+let nextTimer = null;
+
+
+// ==========================================
+// 2. SHUFFLE
+// ==========================================
+
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(
+            Math.random() * (i + 1)
+        );
+
+        [array[i], array[j]] =
+            [array[j], array[i]];
+    }
+
+    return array;
+}
+
+
+// ==========================================
+// 3. CREATE 20 QUESTIONS
+// ==========================================
+
+function createQuestions() {
+    const items = [];
+
+    // Mỗi từ xuất hiện ít nhất 3 lần.
+    // Hai lượt còn lại được chọn ngẫu nhiên.
+    for (let i = 0; i < 3; i++) {
+        items.push(...vocabulary);
+    }
+
+    const extra = shuffle([...vocabulary]).slice(0, 2);
+    items.push(...extra);
+
+    let mixed = [];
+
+    // Tránh lặp đáp án đúng ở 2 câu liên tiếp.
+    for (let tries = 0; tries < 300; tries++) {
+        mixed = shuffle([...items]);
+
+        if (mixed.every((item, i) =>
+            i === 0 ||
+            item.word !== mixed[i - 1].word
+        )) {
+            break;
+        }
+    }
+
+    questions = mixed.map((item, i) => {
+        const wrongOptions = vocabulary.filter(
+            x => x.word !== item.word
+        );
+
+        const wrong = wrongOptions[
+            Math.floor(Math.random() * wrongOptions.length)
+        ];
+
+        const side = Math.random() < 0.5 ? "A" : "B";
+
+        return {
+            target: item,
+            A: side === "A" ? item : wrong,
+            B: side === "B" ? item : wrong,
+            correct: side
+        };
+    });
+}
+
+
+// ==========================================
+// 4. SHOW QUESTION
+// ==========================================
+
+function showQuestion() {
+    stopSpeaking();
+    resetSelection();
+
+    if (index >= questions.length) {
+        finished = true;
+        locked = true;
+
+        $("counter").textContent = "Completed!";
+        $("progressFill").style.width = "100%";
+
+        $("message").textContent =
+            `🏆 Final Score: ${score}/${TOTAL * 10}`;
+
+        $("message").style.color = "#2563eb";
+
+        $("playBtn").disabled = true;
+        $("answerA").disabled = true;
+        $("answerB").disabled = true;
+
+        $("audioStatus").textContent =
+            "Game completed!";
+
+        $("status").textContent =
+            "Press Replay to play again.";
+
+        return;
+    }
+
+    const q = questions[index];
+
+    locked = false;
+    audioPlayed = false;
+
+    needsCenter = true;
+    centerSince = null;
+
+    $("imageA").src = q.A.image;
+    $("wordA").textContent = q.A.word;
+
+    $("imageB").src = q.B.image;
+    $("wordB").textContent = q.B.word;
+
+    $("answerA").className = "answer a";
+    $("answerB").className = "answer b";
+
+    $("answerA").disabled = true;
+    $("answerB").disabled = true;
+    $("playBtn").disabled = false;
+
+    $("message").textContent = "";
+
+    $("counter").textContent =
+        `Question ${index + 1}/${TOTAL}`;
+
+    $("score").textContent =
+        `⭐ Score: ${score}`;
+
+    $("progressFill").style.width =
+        `${index / TOTAL * 100}%`;
+
+    $("audioStatus").textContent =
+        "Teacher: Press Play Audio.";
+
+    $("status").textContent =
+        neutralX === null
+            ? "Start Camera and set middle position."
+            : "Return to the middle.";
+}
+
+
+// ==========================================
+// 5. ENGLISH VOICES
+// ==========================================
+
+let englishVoices = [];
+let currentSpeech = null;
+
+function loadVoices() {
+    if (!("speechSynthesis" in window)) {
+        $("audioStatus").textContent =
+            "Browser does not support speech synthesis.";
+        return;
+    }
+
+    const voices = speechSynthesis.getVoices();
+
+    englishVoices = voices.filter(
+        v => v.lang.toLowerCase().startsWith("en")
+    );
+
+    const select = $("voiceSelect");
+    const previous = select.value;
+
+    select.replaceChildren();
+
+    if (englishVoices.length === 0) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "Default English Voice";
+        select.append(option);
+        return;
+    }
+
+    englishVoices.forEach((voice, i) => {
+        const option = document.createElement("option");
+        option.value = String(i);
+        option.textContent =
+            `${voice.name} (${voice.lang})`;
+        select.append(option);
+    });
+
+    if (
+        previous !== "" &&
+        Number(previous) < englishVoices.length
+    ) {
+        select.value = previous;
+    } else {
+        const preferred = englishVoices.findIndex(
+            v => v.lang.toLowerCase() === "en-us"
+        );
+
+        select.value = String(
+            preferred >= 0 ? preferred : 0
+        );
+    }
+}
+
+if ("speechSynthesis" in window) {
+    loadVoices();
+
+    speechSynthesis.addEventListener(
+        "voiceschanged",
+        loadVoices
+    );
+}
+
+function stopSpeaking() {
+    if ("speechSynthesis" in window) {
+        speechSynthesis.cancel();
+    }
+
+    currentSpeech = null;
+}
+
+
+// ==========================================
+// 6. TEACHER PLAYS AUDIO
+// ==========================================
+
+function playAudio() {
+    if (locked || finished) return;
+
+    if (!("speechSynthesis" in window)) {
+        $("audioStatus").textContent =
+            "❌ Audio is not supported.";
+        return;
+    }
+
+    const word = questions[index].target.word;
+
+    stopSpeaking();
+
+    const speech = new SpeechSynthesisUtterance(word);
+
+    speech.lang = "en-US";
+    speech.rate = 0.8;
+    speech.pitch = 1;
+    speech.volume = 1;
+
+    const selectedIndex =
+        Number($("voiceSelect").value);
+
+    if (englishVoices[selectedIndex]) {
+        speech.voice = englishVoices[selectedIndex];
+        speech.lang = speech.voice.lang;
+    }
+
+    const questionIndex = index;
+    currentSpeech = speech;
+
+    speech.onstart = () => {
+        if (
+            currentSpeech !== speech ||
+            questionIndex !== index
+        ) return;
+
+        $("audioStatus").textContent =
+            "🔊 Playing audio...";
+
+        audioPlayed = true;
+
+        $("answerA").disabled = false;
+        $("answerB").disabled = false;
+    };
+
+    speech.onend = () => {
+        if (
+            currentSpeech !== speech ||
+            questionIndex !== index
+        ) return;
+
+        $("audioStatus").textContent =
+            "✅ Choose the correct picture!";
+    };
+
+    speech.onerror = event => {
+        if (currentSpeech !== speech) return;
+
+        if (
+            event.error === "canceled" ||
+            event.error === "interrupted"
+        ) return;
+
+        $("audioStatus").textContent =
+            "❌ Audio error. Try another English voice.";
+
+        if (!locked) {
+            audioPlayed = false;
+            $("answerA").disabled = true;
+            $("answerB").disabled = true;
+        }
+    };
+
+    $("audioStatus").textContent =
+        "Preparing audio...";
+
+    try {
+        speechSynthesis.speak(speech);
+
+        if (speechSynthesis.paused) {
+            speechSynthesis.resume();
+        }
+    } catch (error) {
+        $("audioStatus").textContent =
+            "Audio error: " + error.message;
+    }
+}
+
+
+// ==========================================
+// 7. CHECK ANSWER
+// ==========================================
+
+function choose(side) {
+    if (
+        locked ||
+        finished ||
+        !audioPlayed
+    ) return;
+
+    locked = true;
+
+    resetSelection();
+    stopSpeaking();
+
+    const q = questions[index];
+
+    if (side === q.correct) {
+        score += 10;
+
+        $("message").textContent =
+            "✅ Correct! +10 points";
+
+        $("message").style.color = "green";
+
+        $("answer" + side).classList.add("correct");
+    } else {
+        $("message").textContent =
+            "❌ Incorrect! Correct answer: " +
+            q.target.word;
+
+        $("message").style.color = "red";
+
+        $("answer" + side).classList.add("wrong");
+        $("answer" + q.correct).classList.add("correct");
+    }
+
+    $("score").textContent =
+        `⭐ Score: ${score}`;
+
+    $("answerA").disabled = true;
+    $("answerB").disabled = true;
+    $("playBtn").disabled = true;
+
+    nextTimer = setTimeout(() => {
+        nextTimer = null;
+        index++;
+        showQuestion();
+    }, 1100);
+}
+
+
+// ==========================================
+// 8. RESTART
+// ==========================================
+
+function restart() {
+    if (nextTimer !== null) {
+        clearTimeout(nextTimer);
+        nextTimer = null;
+    }
+
+    stopSpeaking();
+
+    index = 0;
+    score = 0;
+    locked = false;
+    finished = false;
+
+    createQuestions();
+    showQuestion();
+}
+
+
+// ==========================================
+// 9. CAMERA VARIABLES
+// ==========================================
+
+const video = $("video");
+const canvas = $("overlay");
+const ctx = canvas.getContext("2d");
+
+let pose = null;
+let stream = null;
+let cameraRunning = false;
+
+let neutralX = null;
+let bodyX = null;
+let filteredX = null;
+
+let needsCenter = true;
+let centerSince = null;
+
+let choiceSide = null;
+let choiceStart = 0;
+
+// Camera sensitivity
+const MOVE_THRESHOLD = 0.045;
+const CENTER_THRESHOLD = 0.03;
+
+// Time required to confirm selection
+const HOLD_TIME = 260;
+
+// Time to confirm returning to middle
+const CENTER_HOLD = 100;
+
+
+// ==========================================
+// 10. START CAMERA
+// ==========================================
+
+async function startCamera() {
+    if (cameraRunning) return;
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+        $("status").textContent =
+            "Camera requires HTTPS or localhost.";
+        return;
+    }
+
+    $("startBtn").disabled = true;
+
+    $("status").textContent =
+        "Loading camera and AI...";
+
+    try {
+        if (typeof Pose === "undefined") {
+            throw new Error(
+                "MediaPipe not loaded. Check Internet."
+            );
+        }
+
+        if (!pose) {
+            pose = new Pose({
+                locateFile: file =>
+                    "https://cdn.jsdelivr.net/npm/" +
+                    "@mediapipe/pose@0.5.1675469404/" +
+                    file
+            });
+
+            pose.setOptions({
+                modelComplexity: 0,
+                smoothLandmarks: true,
+                minDetectionConfidence: 0.5,
+                minTrackingConfidence: 0.5
+            });
+
+            pose.onResults(onPoseResults);
+        }
+
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                width: { ideal: 640 },
+                height: { ideal: 480 },
+                frameRate: { ideal: 30 },
+                facingMode: "user"
+            },
+            audio: false
+        });
+
+        video.srcObject = stream;
+
+        await video.play();
+
+        cameraRunning = true;
+
+        neutralX = null;
+        bodyX = null;
+        filteredX = null;
+
+        $("status").textContent =
+            "Show your face and shoulders.";
+
+        requestAnimationFrame(processCamera);
+
+    } catch (error) {
+        cameraRunning = false;
+        $("startBtn").disabled = false;
+
+        $("status").textContent =
+            "Camera error: " + error.message;
+
+        if (stream) {
+            stream.getTracks().forEach(
+                track => track.stop()
+            );
+            stream = null;
+        }
+    }
+}
+
+
+// ==========================================
+// 11. PROCESS CAMERA
+// ==========================================
+
+async function processCamera() {
+    if (!cameraRunning) return;
+
+    try {
+        if (video.readyState >= 2) {
+            await pose.send({ image: video });
+        }
+    } catch (error) {
+        cameraRunning = false;
+
+        $("startBtn").disabled = false;
+        $("calibrateBtn").disabled = true;
+
+        $("status").textContent =
+            "AI error: " + error.message;
+
+        if (stream) {
+            stream.getTracks().forEach(
+                track => track.stop()
+            );
+
+            stream = null;
+        }
+
+        return;
+    }
+
+    if (cameraRunning) {
+        requestAnimationFrame(processCamera);
+    }
+}
+
+
+// ==========================================
+// 12. FACE & SHOULDER TRACKING
+// ==========================================
+
+function onPoseResults(results) {
+    ctx.clearRect(0, 0, 640, 480);
+
+    const lm = results.poseLandmarks;
+
+    if (!lm) {
+        bodyX = null;
+        filteredX = null;
+        centerSince = null;
+
+        resetSelection();
+
+        $("calibrateBtn").disabled = true;
+
+        $("status").textContent =
+            "Show your face and shoulders.";
+
+        return;
+    }
+
+    // Nose = 0
+    // Left shoulder = 11
+    // Right shoulder = 12
+
+    const ids = [0, 11, 12];
+
+    const valid = ids.every(
+        i => (lm[i].visibility ?? 1) > 0.4
+    );
+
+    if (!valid) {
+        bodyX = null;
+        filteredX = null;
+        centerSince = null;
+
+        resetSelection();
+
+        $("calibrateBtn").disabled = true;
+
+        $("status").textContent =
+            "Camera needs face and both shoulders.";
+
+        return;
+    }
+
+    const rawX = (lm[11].x + lm[12].x) / 2;
+
+    // Mirror to match what student sees
+    const mirroredX = 1 - rawX;
+
+    if (filteredX === null) {
+        filteredX = mirroredX;
+    } else {
+        filteredX =
+            0.8 * mirroredX +
+            0.2 * filteredX;
+    }
+
+    bodyX = filteredX;
+
+    // Draw detected key points
+    for (const i of ids) {
+        ctx.beginPath();
+
+        ctx.arc(
+            lm[i].x * 640,
+            lm[i].y * 480,
+            8,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fillStyle = "#22c55e";
+        ctx.fill();
+    }
+
+    // Draw shoulder line
+    ctx.beginPath();
+
+    ctx.moveTo(
+        lm[11].x * 640,
+        lm[11].y * 480
+    );
+
+    ctx.lineTo(
+        lm[12].x * 640,
+        lm[12].y * 480
+    );
+
+    ctx.strokeStyle = "#facc15";
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    $("calibrateBtn").disabled = false;
+
+    updateBodyControl();
+}
+
+
+// ==========================================
+// 13. CALIBRATE MIDDLE POSITION
+// ==========================================
+
+function calibrate() {
+    if (bodyX === null) {
+        $("status").textContent =
+            "Face and shoulders not detected.";
+        return;
+    }
+
+    neutralX = bodyX;
+
+    needsCenter = false;
+    centerSince = null;
+
+    resetSelection();
+
+    $("status").textContent =
+        audioPlayed
+            ? "Ready! Move left A or right B."
+            : "Ready! Teacher: Play Audio.";
+}
+
+
+// ==========================================
+// 14. CAMERA ANSWER CONTROL
+// ==========================================
+
+function updateBodyControl() {
+    if (neutralX === null) return;
+
+    if (
+        locked ||
+        finished ||
+        bodyX === null
+    ) return;
+
+    const distance = bodyX - neutralX;
+    const now = performance.now();
+
+    // Return to center before each question
+    if (needsCenter) {
+        resetSelection();
+
+        if (
+            Math.abs(distance) <= CENTER_THRESHOLD
+        ) {
+            if (centerSince === null) {
+                centerSince = now;
+            }
+
+            if (
+                now - centerSince >= CENTER_HOLD
+            ) {
+                needsCenter = false;
+                centerSince = null;
+            }
+        } else {
+            centerSince = null;
+        }
+
+        if (needsCenter) {
+            if (audioPlayed) {
+                $("status").textContent =
+                    "Return to the middle.";
+            }
+
+            return;
+        }
+    }
+
+    // Teacher has not played audio
+    if (!audioPlayed) return;
+
+    let side = null;
+
+    if (distance <= -MOVE_THRESHOLD) {
+        side = "A";
+    } else if (distance >= MOVE_THRESHOLD) {
+        side = "B";
+    }
+
+    if (!side) {
+        resetSelection();
+
+        $("status").textContent =
+            "Ready! Move left A or right B.";
+
+        return;
+    }
+
+    clearZones();
+
+    $("zone" + side).classList.add(
+        side === "A" ? "activeA" : "activeB"
+    );
+
+    $("answer" + side).classList.add("active");
+
+    if (choiceSide !== side) {
+        choiceSide = side;
+        choiceStart = now;
+    }
+
+    const elapsed = now - choiceStart;
+
+    const percent = Math.min(
+        100,
+        elapsed / HOLD_TIME * 100
+    );
+
+    $("meterFill").style.width =
+        percent + "%";
+
+    $("status").textContent =
+        "Selecting " + side + "... " +
+        Math.round(percent) + "%";
+
+    if (elapsed >= HOLD_TIME) {
+        choose(side);
+    }
+}
+
+
+// ==========================================
+// 15. RESET SELECTION EFFECTS
+// ==========================================
+
+function clearZones() {
+    $("zoneA").classList.remove("activeA");
+    $("zoneB").classList.remove("activeB");
+
+    $("answerA").classList.remove("active");
+    $("answerB").classList.remove("active");
+}
+
+function resetSelection() {
+    choiceSide = null;
+    choiceStart = 0;
+
+    $("meterFill").style.width = "0%";
+
+    clearZones();
+}
+
+
+// ==========================================
+// 16. INITIALIZE GAME
+// ==========================================
+
+createQuestions();
+showQuestion();
+
+</script>
+
+</body>
+</html>
